@@ -2,6 +2,7 @@
 #define SIMPLEZIPPER_HPP
 
 #include <QString>
+#include "miniz.h"
 
 /**
  * @class   SimpleZipper
@@ -56,8 +57,8 @@ public:
     /**
      * @brief   Zip a single file using miniz and Qt.
      *
-     * @details This function takes a file name as input and compresses it using the miniz library and the Qt file
-     *          abstraction classes. The default compression level is used.
+     * @details This function takes a file name and a zip file name as inputs and compresses it using the
+     *          miniz library and the Qt file abstraction classes. The default compression level is used.
      *
      * @param   fileName The name of the file to compress.
      * @param   zipFilename The name of the generated zip file.
@@ -67,11 +68,11 @@ public:
     static bool zipFile(const QString& filename, const QString& zipFilename);
 
     /**
-     * @brief   Zip a folder and all its contents using miniz and Qt.
+     * @brief   Zip a folder and all its contents recursively using miniz and Qt.
      *
-     * @details This function takes a folder name and a zip file name as input and compresses the root level
-     *          contents into a zip file using the miniz library and the Qt file abstraction classes.
-     *          The directory structures is NOT recursively traced. The default compression level is used.
+     * @details This function takes a folder name as input and compresses all the files in the folder and
+     *          its subfolders into a zip file using the miniz library and the Qt file abstraction classes
+     *          while preserving the directory structure. The default compression level is used.
      *          The compressed file is saved in the same directory as the input folder with a .zip
      *          extension.
      *
@@ -82,11 +83,12 @@ public:
     static bool zipFolder(const QString& folder);
 
     /**
-     * @brief   Zip a folder and all its contents using miniz and Qt.
+     * @brief   Zip a folder and all its contents recursively using miniz and Qt.
      *
-     * @details This function takes a folder name and a zip file name as input and compresses the root level
-     *          contents into a zip file using the miniz library and the Qt file abstraction classes.
-     *          The directory structures is NOT recursively traced. The default compression level is used.
+     * @details This function takes a folder name and a zip file name as inputs and compresses all the files
+     *          in the folder and its subfolders into a zip file using the miniz library and the Qt file
+     *          abstraction classes while preserving the directory structure. The default compression level
+     *          is used.
      *
      * @param   folder The name of the folder to compress.
      * @param   zipFilename The name of the zip file to create.
@@ -94,6 +96,21 @@ public:
      * @return  True if the folder was compressed successfully, false otherwise.
      */
     static bool zipFolder(const QString& folder, const QString& zipFilename);
+
+private:
+    /**
+     * @brief   Recursively add all files in a folder and its subfolders to a zip archive with the appropriate prefix.
+     *
+     * @details This function is used by zipFolder to traverse the directory tree and add all files and
+     *          subfolders to the zip archive with the appropriate directory structure.
+     *
+     * @param   zip A pointer to the miniz zip archive object to add files to.
+     * @param   folder The name of the folder to add files from.
+     * @param   prefix The prefix to add to the file names in the zip archive to preserve the directory structure.
+     *
+     * @return  True if all files were added successfully, false otherwise.
+     */
+    static bool addFolderToZip(mz_zip_archive* zip, const QString& folder, const QString& prefix);
 };
 
 #endif // SIMPLEZIPPER_HPP
