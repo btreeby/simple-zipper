@@ -114,11 +114,13 @@ bool SimpleZipper::zipFile(const QString& filename, const QString& zipFilename)
     return true;
 }
 
-bool SimpleZipper::zipFolder(const QString& filename)
+bool SimpleZipper::zipFolder(const QString& folder)
 {
-    QFileInfo fileInfo(filename);
-    QString zipFilename = fileInfo.absoluteDir().path() + ".zip";
-    return zipFile(filename, zipFilename);
+    QDir dir(folder);
+    QString zipFilename = dir.dirName() + ".zip";
+    dir.cdUp();
+    zipFilename = dir.absolutePath() + "/" + zipFilename;
+    return zipFolder(folder, zipFilename);
 }
 
 bool SimpleZipper::zipFolder(const QString& folder, const QString& zipFilename)
