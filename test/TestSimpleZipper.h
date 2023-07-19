@@ -12,8 +12,8 @@
  * @brief   Unit tests for SimpleZipper class.
  *
  * @details The TestSimpleZipper class implements unit tests for the static methods in the SimpleZipper class.
- *          It creates three text files, and zips and unzips these by file and folder, and checks the file
- *          contents survive the zip-unzip.
+ *          It creates three text files and a subdirectory with two text files, and zips and unzips these by file and folder,
+ *          and checks the file contents survive the zip-unzip.
  */
 class TestSimpleZipper : public QObject {
     Q_OBJECT
@@ -23,10 +23,13 @@ private:
     QFile mFile1;
     QFile mFile2;
     QFile mFile3;
+    QDir mSubDir;
+    QFile mSubFile1;
+    QFile mSubFile2;
 
 private slots:
     /**
-     * @brief Creates a temporary directory with three text files.
+     * @brief Creates a temporary directory with three text files and a subdirectory with two text files.
      */
     void initTestCase() {
         // Create a temporary directory
@@ -48,6 +51,20 @@ private slots:
         QVERIFY(mFile3.open(QIODevice::WriteOnly));
         mFile3.write("Lorem Ipsum.");
         mFile3.close();
+
+        // Create a subdirectory with two text files
+        mSubDir = QDir(mTempDir.filePath("subdir"));
+        QVERIFY(mSubDir.mkpath("."));
+
+        mSubFile1.setFileName(mSubDir.filePath("mSubFile1.txt"));
+        QVERIFY(mSubFile1.open(QIODevice::WriteOnly));
+        mSubFile1.write("Sub File 1");
+        mSubFile1.close();
+
+        mSubFile2.setFileName(mSubDir.filePath("mSubFile2.txt"));
+        QVERIFY(mSubFile2.open(QIODevice::WriteOnly));
+        mSubFile2.write("Sub File 2");
+        mSubFile2.close();
     }
 
     /**
@@ -56,7 +73,9 @@ private slots:
     void testZipDirectory()
     {
         // Name for zip file
-        QString zipPath = mTempDir.filePath("testZipper.zip");
+        QDir parentDir = mTempDir;
+        parentDir.cdUp();
+        QString zipPath = parentDir.filePath("testZipper.zip");
 
         // Zip the temporary directory
         QVERIFY(SimpleZipper::zipFolder(mTempDir.absolutePath(), zipPath));
@@ -74,23 +93,33 @@ private slots:
         QFile unzippedFile1(tempUnzipDir + "/mFile1.txt");
         QFile unzippedFile2(tempUnzipDir + "/mFile2.txt");
         QFile unzippedFile3(tempUnzipDir + "/mFile3.txt");
+        QFile unzippedSubFile1(tempUnzipDir + "/subdir/mSubFile1.txt");
+        QFile unzippedSubFile2(tempUnzipDir + "/subdir/mSubFile2.txt");
 
         QVERIFY(unzippedFile1.open(QIODevice::ReadOnly));
         QVERIFY(unzippedFile2.open(QIODevice::ReadOnly));
         QVERIFY(unzippedFile3.open(QIODevice::ReadOnly));
+        QVERIFY(unzippedSubFile1.open(QIODevice::ReadOnly));
+        QVERIFY(unzippedSubFile2.open(QIODevice::ReadOnly));
 
         QVERIFY(mFile1.open(QIODevice::ReadOnly));
         QVERIFY(mFile2.open(QIODevice::ReadOnly));
         QVERIFY(mFile3.open(QIODevice::ReadOnly));
+        QVERIFY(mSubFile1.open(QIODevice::ReadOnly));
+        QVERIFY(mSubFile2.open(QIODevice::ReadOnly));
 
         QCOMPARE(unzippedFile1.readAll(), mFile1.readAll());
         QCOMPARE(unzippedFile2.readAll(), mFile2.readAll());
         QCOMPARE(unzippedFile3.readAll(), mFile3.readAll());
+        QCOMPARE(unzippedSubFile1.readAll(), mSubFile1.readAll());
+        QCOMPARE(unzippedSubFile2.readAll(), mSubFile2.readAll());
 
         // Close original files
         mFile1.close();
         mFile2.close();
         mFile3.close();
+        mSubFile1.close();
+        mSubFile2.close();
     }
 
     /**
