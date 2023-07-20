@@ -17,19 +17,13 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    # installing Qt takes ~ 5 mins so cache to speed up
-    - name: Cache Qt5
-      id: cache-qt
-      uses: actions/cache@v3
-      with:
-        path: ${{github.workspace}}/Qt
-        key: cache_qt
-
     - name: Install Qt5
       uses: jurplel/install-qt-action@v3
       with:
         version: '5.15.2'
-        cache: true # don't redownload if the files are available (still sets up the enviromnent)
+        cache: true 
+        # Don't redownload if the files are available (still sets up the enviromnent).
+        # This reduces ~5 mins (first time) to ~3 mins.
         
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
