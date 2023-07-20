@@ -1,9 +1,9 @@
 #include "SimpleZipper.h"
-#include "miniz.h"
 #include <QFile>
 #include <QIODevice>
 #include <QDir>
 #include <QDebug>
+#include <QDirIterator>
 
 bool SimpleZipper::unzipFile(const QString& zipFilename)
 {
@@ -114,20 +114,18 @@ bool SimpleZipper::zipFile(const QString& filename, const QString& zipFilename)
     return true;
 }
 
-bool SimpleZipper::zipFolder(const QString& filename)
+bool SimpleZipper::zipFolder(const QString& folder)
 {
-    QFileInfo fileInfo(filename);
-    QString zipFilename = fileInfo.absoluteDir().path() + ".zip";
-    return zipFile(filename, zipFilename);
+    QDir dir(folder);
+    QString zipFilename = dir.dirName() + ".zip";
+    dir.cdUp();
+    zipFilename = dir.absolutePath() + "/" + zipFilename;
+    return zipFolder(folder, zipFilename);
 }
 
 bool SimpleZipper::zipFolder(const QString& folder, const QString& zipFilename)
 {
     qDebug() << "Zipping folder" << folder << "to" << zipFilename;
-
-    // Get a list of all files in root level directory
-    QDir dir(folder);
-    QStringList files = dir.entryList(QDir::Files);
 
     // Create and open the output zip file
     mz_zip_archive zip;
@@ -137,7 +135,27 @@ bool SimpleZipper::zipFolder(const QString& folder, const QString& zipFilename)
         return false;
     }
 
-    // Add each file in the folder to the zip archive
+    // Add each file in the folder and its subfolders to the zip archive
+    if (!addFolderToZip(&zip, folder, "")) {
+        mz_zip_writer_end(&zip);
+        return false;
+    }
+
+    // Clean up
+    mz_zip_writer_finalize_archive(&zip);
+    mz_zip_writer_end(&zip);
+    qDebug() << "Zip complete";
+    return true;
+}
+
+bool SimpleZipper::addFolderToZip(mz_zip_archive* zip, const QString& folder, const QString& prefix)
+{
+    // Get a list of all files and folders in the directory
+    QDir dir(folder);
+    QStringList files = dir.entryList(QDir::Files);
+    QStringList dirs = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+
+    // Add each file to the zip archive with the appropriate prefix
     for (const auto& file : files) {
         QString filename = folder + "/" + file;
         QFile inFile(filename);
@@ -145,21 +163,24 @@ bool SimpleZipper::zipFolder(const QString& folder, const QString& zipFilename)
 
         if (!inFile.open(QIODevice::ReadOnly)) {
             qWarning() << "Failed to open file" << filename << "for reading";
-            mz_zip_writer_end(&zip);
             return false;
         }
 
         QByteArray buffer = inFile.readAll();
-        if (!mz_zip_writer_add_mem(&zip, file.toUtf8().constData(), buffer.constData(), buffer.size(), MZ_DEFAULT_COMPRESSION)) {
-            qWarning() << "Failed to add file" << file << "to zip archive" << zipFilename;
-            mz_zip_writer_end(&zip);
+        if (!mz_zip_writer_add_mem(zip, (prefix + file).toUtf8().constData(), buffer.constData(), buffer.size(), MZ_DEFAULT_COMPRESSION)) {
+            qWarning() << "Failed to add file" << file << "to zip archive";
             return false;
         }
     }
 
-    // Clean up
-    mz_zip_writer_finalize_archive(&zip);
-    mz_zip_writer_end(&zip);
-    qDebug() << "Zip complete";
+    // Recursively add files in each subdirectory to the zip archive with the appropriate prefix
+    for (const auto& subdir : dirs) {
+        QString subfolder = folder + "/" + subdir;
+        QString subprefix = prefix + subdir + "/";
+        if (!addFolderToZip(zip, subfolder, subprefix)) {
+            return false;
+        }
+    }
+
     return true;
 }

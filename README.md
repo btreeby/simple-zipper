@@ -18,7 +18,7 @@ Zipping a single file to a zip file with the same name:
 SimpleZipper::zipFile(QString("C:/Path/To/InputFile.ext"));
 ```
 
-Zipping all files in the root directory of a folder to a zip file with the same name:
+Zipping a folder to a zip file with the same name:
 
 ```c++
 SimpleZipper::zipFolder(QString("C:/Path/To/InputFolder"));
@@ -50,4 +50,3 @@ cd builds/bin/debug
 TestSimpleZipper.exe
 ```
 
-Or alternatively, call these directly from Visual Studio by setting `TestSimpleZipper` as the startup project.
